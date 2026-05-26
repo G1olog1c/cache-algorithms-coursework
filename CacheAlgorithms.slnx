@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="CacheAlgorithms.Benchmark/CacheAlgorithms.Benchmark.csproj" />
+  <Project Path="CacheAlgorithms.Core/CacheAlgorithms.Core.csproj" />
+  <Project Path="CacheAlgorithms.Tests/CacheAlgorithms.Tests.csproj" />
+</Solution>
