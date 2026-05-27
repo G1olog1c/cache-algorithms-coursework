@@ -29,8 +29,9 @@ public sealed class ZipfianWorkload : IWorkloadGenerator
         _cumulativeProbabilities = BuildCumulativeProbabilities(keySpaceSize, skew);
     }
 
-    public string Name => $"Zipfian(s={_skew:F2})";
-
+    public string Name => string.Create(
+        System.Globalization.CultureInfo.InvariantCulture,
+        $"Zipfian(s={_skew:F2})");
     public int KeySpaceSize { get; }
 
     public IEnumerable<int> Generate(int requestCount)

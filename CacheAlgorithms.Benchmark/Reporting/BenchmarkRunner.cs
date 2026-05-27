@@ -19,24 +19,25 @@ public static class BenchmarkRunner
         IWorkloadGenerator workload,
         int requestCount)
     {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(requestCount);
+        var requests = workload.Generate(requestCount).ToArray();
+        return Run(cache, workload, requests);
+    }
+
+    public static BenchmarkResult Run(
+        ICacheStrategy<int, int> cache,
+        IWorkloadGenerator workload,
+        IReadOnlyList<int> requests)
+    {
         ArgumentNullException.ThrowIfNull(cache);
         ArgumentNullException.ThrowIfNull(workload);
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(requestCount);
+        ArgumentNullException.ThrowIfNull(requests);
 
-        // Materialise the request stream up front.
-        // This isolates the timed section from any per-call generator overhead
-        // (random number generation, binary search in the Zipfian CDF, etc.).
-        var requests = workload.Generate(requestCount).ToArray();
+        WarmUp(cache, workload.KeySpaceSize);
+        cache.Clear();
 
         var evictionCount = 0;
         cache.Evicted += (_, _) => evictionCount++;
-
-        // Warm up the JIT and CPU caches with a tiny dummy pass.
-        // Without this, the first few hundred requests run slower than the rest
-        // and skew the average. The warm-up volume is intentionally small —
-        // we don't want to alter the cache state in a meaningful way.
-        WarmUp(cache, workload.KeySpaceSize);
-        cache.Clear();
 
         var hits = 0;
         var misses = 0;
@@ -51,9 +52,6 @@ public static class BenchmarkRunner
             else
             {
                 misses++;
-                // The value is identical to the key here — we benchmark cache mechanics,
-                // not what the cache stores. Using key-as-value avoids allocating
-                // strings or objects inside the timed loop.
                 cache.Put(key, key);
             }
         }
@@ -65,7 +63,7 @@ public static class BenchmarkRunner
             WorkloadName = workload.Name,
             Capacity = cache.Capacity,
             KeySpaceSize = workload.KeySpaceSize,
-            RequestCount = requestCount,
+            RequestCount = requests.Count,
             Hits = hits,
             Misses = misses,
             Evictions = evictionCount,
